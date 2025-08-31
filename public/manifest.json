@@ -1,0 +1,21 @@
+{
+  "short_name": "Movie Quest",
+  "name": "Onesmus Movie Quest",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "react-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#61dafb",
+  "background_color": "#282c34",
+  "description": "A modern movie discovery and recommendation web application built with React"
+}
