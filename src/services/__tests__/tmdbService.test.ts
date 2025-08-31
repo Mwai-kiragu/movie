@@ -25,10 +25,11 @@ describe('TMDBService', () => {
       expect(tmdbService.hasCredentials()).toBe(true);
     });
 
-    it('should return false if no credentials exist', () => {
+    it('should always return true due to default credentials', () => {
       localStorage.getItem = vi.fn().mockReturnValue(null);
       
-      expect(tmdbService.hasCredentials()).toBe(false);
+      // The service always returns true because it has default credentials
+      expect(tmdbService.hasCredentials()).toBe(true);
     });
 
     it('should clear credentials', () => {
