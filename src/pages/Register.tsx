@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { getRedirectUrl } from '@/lib/config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,6 +69,7 @@ export default function Register() {
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: getRedirectUrl(),
           data: {
             full_name: formData.fullName,
           },
@@ -253,7 +255,7 @@ export default function Register() {
                     const { error } = await supabase.auth.signInWithOAuth({
                       provider: 'google',
                       options: {
-                        redirectTo: `${window.location.origin}/`,
+                        redirectTo: getRedirectUrl(),
                       },
                     });
                     if (error) throw error;
@@ -290,7 +292,7 @@ export default function Register() {
                     const { error } = await supabase.auth.signInWithOAuth({
                       provider: 'github',
                       options: {
-                        redirectTo: `${window.location.origin}/`,
+                        redirectTo: getRedirectUrl(),
                       },
                     });
                     if (error) throw error;

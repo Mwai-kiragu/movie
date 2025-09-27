@@ -2,6 +2,7 @@ import React from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/lib/supabase';
+import { getRedirectUrl } from '@/lib/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const LoginForm: React.FC = () => {
@@ -26,7 +27,7 @@ export const LoginForm: React.FC = () => {
             },
           }}
           providers={['google', 'github']}
-          redirectTo={window.location.origin}
+          redirectTo={getRedirectUrl()}
         />
       </CardContent>
     </Card>
