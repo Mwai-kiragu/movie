@@ -9,6 +9,8 @@ import Index from "./pages/Index";
 import MovieDetails from "./pages/MovieDetails";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+import Watchlist from "./pages/Watchlist";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -36,9 +38,7 @@ const App = () => (
               path="/profile"
               element={
                 <ProtectedRoute>
-                  <div className="container mx-auto p-4">
-                    <h1 className="text-2xl font-bold">Profile Page (Coming Soon)</h1>
-                  </div>
+                  <Profile />
                 </ProtectedRoute>
               }
             />
@@ -46,9 +46,7 @@ const App = () => (
               path="/watchlist"
               element={
                 <ProtectedRoute>
-                  <div className="container mx-auto p-4">
-                    <h1 className="text-2xl font-bold">My Watchlist (Coming Soon)</h1>
-                  </div>
+                  <Watchlist />
                 </ProtectedRoute>
               }
             />

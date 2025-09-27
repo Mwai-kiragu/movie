@@ -1,4 +1,6 @@
-import { X, Star, Calendar, Clock, Globe } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { X, Star, Calendar, Clock, Globe, Heart, Check, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Movie } from "@/types/movie";
+import { watchlistService } from "@/services/watchlistService";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MovieDetailModalProps {
   movie: Movie | null;
@@ -17,9 +22,20 @@ interface MovieDetailModalProps {
 }
 
 export const MovieDetailModal = ({ movie, isOpen, onClose }: MovieDetailModalProps) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
+
+  useEffect(() => {
+    if (movie) {
+      setIsInWatchlist(watchlistService.isInWatchlist(movie.id));
+    }
+  }, [movie]);
+
   if (!movie) return null;
 
-  const posterUrl = movie.poster_path 
+  const posterUrl = movie.poster_path
     ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
     : "/placeholder-movie.jpg";
 
@@ -28,6 +44,39 @@ export const MovieDetailModal = ({ movie, isOpen, onClose }: MovieDetailModalPro
     : posterUrl;
 
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : "TBA";
+
+  const handleWatchlistToggle = () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to add movies to your watchlist.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+
+    if (isInWatchlist) {
+      watchlistService.removeFromWatchlist(movie.id);
+      setIsInWatchlist(false);
+      toast({
+        title: "Removed from watchlist",
+        description: `${movie.title} has been removed from your watchlist.`,
+      });
+    } else {
+      watchlistService.addToWatchlist(movie);
+      setIsInWatchlist(true);
+      toast({
+        title: "Added to watchlist",
+        description: `${movie.title} has been added to your watchlist.`,
+      });
+    }
+  };
+
+  const handleViewDetails = () => {
+    navigate(`/movie/${movie.id}`);
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -118,10 +167,25 @@ export const MovieDetailModal = ({ movie, isOpen, onClose }: MovieDetailModalPro
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4">
-                  <Button className="bg-gradient-primary text-primary-foreground font-medium">
-                    Add to Watchlist
+                  <Button
+                    onClick={handleWatchlistToggle}
+                    variant={isInWatchlist ? "outline" : "default"}
+                    className={!isInWatchlist ? "bg-gradient-primary text-primary-foreground font-medium" : ""}
+                  >
+                    {isInWatchlist ? (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        In Watchlist
+                      </>
+                    ) : (
+                      <>
+                        <Heart className="h-4 w-4 mr-2" />
+                        Add to Watchlist
+                      </>
+                    )}
                   </Button>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={handleViewDetails}>
+                    <ExternalLink className="h-4 w-4 mr-2" />
                     View More Details
                   </Button>
                 </div>

@@ -1,12 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { MovieGrid } from "@/components/movies/MovieGrid";
 import { MovieDetailModal } from "@/components/movies/MovieDetailModal";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
-import { Movie, MoviesResponse } from "@/types/movie";
-import { tmdbService } from "@/services/tmdbService";
+import { Movie } from "@/types/movie";
 import { SearchBar } from "@/components/movies/SearchBar";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,53 +13,71 @@ import { TrendingUp, Star, Film } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { usePopularMovies, useTrendingMovies, useSearchMovies } from "@/hooks/useMovies";
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
-  const [movies, setMovies] = useState<Movie[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("popular");
   const { toast } = useToast();
 
+  // TanStack Query hooks
+  const {
+    data: popularMoviesData,
+    isLoading: isLoadingPopular,
+    error: popularError
+  } = usePopularMovies(currentPage);
 
-  const fetchMovies = useCallback(async (page: number = 1, query: string = "", tab: string = activeTab) => {
-    setIsLoading(true);
-    try {
-      let response: MoviesResponse;
-      
-      if (query.trim()) {
-        response = await tmdbService.searchMovies(query, page);
-      } else if (tab === "trending") {
-        response = await tmdbService.getTrendingMovies('week', page);
-      } else {
-        response = await tmdbService.getPopularMovies(page);
-      }
-      
-      setMovies(response.results);
-      setTotalPages(Math.min(response.total_pages, 50)); // Limit to 50 pages for better UX
-      setCurrentPage(page);
-    } catch (error) {
-      console.error("Error fetching movies:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch movies. Please check your API credentials.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeTab, toast]);
+  const {
+    data: trendingMoviesData,
+    isLoading: isLoadingTrending,
+    error: trendingError
+  } = useTrendingMovies('week', currentPage);
 
-  useEffect(() => {
-    if (user) {
-      fetchMovies(1, searchQuery, activeTab);
+  const {
+    data: searchMoviesData,
+    isLoading: isLoadingSearch,
+    error: searchError
+  } = useSearchMovies(searchQuery, currentPage);
+
+  // Determine current data and loading state
+  const getCurrentMovieData = () => {
+    if (searchQuery.trim()) {
+      return {
+        data: searchMoviesData,
+        isLoading: isLoadingSearch,
+        error: searchError
+      };
+    } else if (activeTab === "trending") {
+      return {
+        data: trendingMoviesData,
+        isLoading: isLoadingTrending,
+        error: trendingError
+      };
+    } else {
+      return {
+        data: popularMoviesData,
+        isLoading: isLoadingPopular,
+        error: popularError
+      };
     }
-  }, [searchQuery, activeTab, user, fetchMovies]);
+  };
+
+  const { data: currentMovieData, isLoading, error } = getCurrentMovieData();
+  const movies = currentMovieData?.results || [];
+  const totalPages = Math.min(currentMovieData?.total_pages || 1, 50); // Limit to 50 pages for better UX
+
+  // Handle errors
+  if (error && user) {
+    toast({
+      title: "Error",
+      description: "Failed to fetch movies. Please check your API credentials.",
+      variant: "destructive",
+    });
+  }
 
   const handleMovieClick = (movie: Movie) => {
     setSelectedMovie(movie);
@@ -74,7 +91,7 @@ const Index = () => {
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
-      fetchMovies(newPage, searchQuery);
+      setCurrentPage(newPage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -223,23 +240,29 @@ const Index = () => {
                 )}
 
                 {/* Pages around current page */}
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const page = Math.max(2, Math.min(currentPage - 2 + i, totalPages - 1));
-                  if (page > 1 && page < totalPages) {
-                    return (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
+                {(() => {
+                  const pages = [];
+                  const startPage = Math.max(2, currentPage - 2);
+                  const endPage = Math.min(totalPages - 1, currentPage + 2);
+
+                  for (let page = startPage; page <= endPage; page++) {
+                    if (page > 1 && page < totalPages) {
+                      pages.push(
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
                   }
-                  return null;
-                }).filter(Boolean)}
+
+                  return pages;
+                })()}
 
                 {/* Ellipsis before last page */}
                 {currentPage < totalPages - 2 && (
